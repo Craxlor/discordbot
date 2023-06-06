@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%green(%d{dd MMM yyyy}, %d{HH:mm:ss.SSS}) %cyan([%thread]) %gray(%class) %boldYellow(%method) %n%-5level: %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="SIFT" class="ch.qos.logback.classic.sift.SiftingAppender">
+        <!-- in the absence of the class attribute, it is assumed that the
+             desired discriminator type is
+             ch.qos.logback.classic.sift.MDCBasedDiscriminator -->
+        <discriminator>
+            <key>filename</key>
+            <defaultValue>unknown</defaultValue>
+        </discriminator>
+        <sift>
+            <appender name="FILE-${filename}" class="ch.qos.logback.core.FileAppender">
+                <file>resources/logs/${filename}.log</file>
+                <append>true</append>
+                <encoder>
+                    <pattern>%d{dd MMM yyyy}, %d{HH:mm:ss.SSS} [%thread] %class %method %n%-5level: %msg%n</pattern>
+                </encoder>
+            </appender>
+        </sift>
+    </appender>
+
+    <appender name="DATABASE" class="ch.qos.logback.core.FileAppender">
+        <file>resources/logs/database.log</file>
+        <append>true</append>
+        <encoder>
+            <pattern>%d{dd MMM yyyy}, %d{HH:mm:ss.SSS} [%thread] %n%caller{0..2}%-5level: %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="REDDIT" class="ch.qos.logback.core.FileAppender">
+        <file>resources/logs/reddit.log</file>
+        <append>true</append>
+        <encoder>
+            <pattern>%d{dd MMM yyyy}, %d{HH:mm:ss.SSS} [%thread] %class %method %n%caller{0..3}%-5level: %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="sift" level="INFO">
+        <appender-ref ref="SIFT" />
+    </logger>
+
+    <logger name="database" level="INFO">
+        <appender-ref ref="DATABASE" />
+    </logger>
+
+    <logger name="reddit" level="INFO">
+        <appender-ref ref="REDDIT" />
+    </logger>
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT" />
+    </root>
+</configuration>

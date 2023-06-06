@@ -1,0 +1,8 @@
+.gradle
+.vscode
+bin
+build
+*.properties
+*.db
+*.log
+*.json
