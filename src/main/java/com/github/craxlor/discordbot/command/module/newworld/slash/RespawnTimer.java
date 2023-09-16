@@ -44,7 +44,7 @@ public class RespawnTimer extends SlashCommand {
                 VOICECHANNEL_OPT_DESCRIPTION);
         OptionData time = new OptionData(OptionType.STRING, TIME_OPT_NAME, TIME_OPT_DESCRIPTION);
         time.addChoice(TIME_CHOICE_NOW, TIME_CHOICE_NOW);
-        int hour = 15;
+        int hour = 13;
         String choice;
         while (hour < 24) {
             choice = String.valueOf(hour) + ":00";
@@ -89,7 +89,7 @@ public class RespawnTimer extends SlashCommand {
         Date date = new Date();
         Calendar calendar = Calendar.getInstance();
         if (time == null) {
-        } else if (time != null || time.equals("now") == false) {
+        } else if (time != null && time.equalsIgnoreCase(TIME_CHOICE_NOW) == false) {
             date = new SimpleDateFormat("hh:mm").parse(time);
             calendar.setTime(date);
         }
@@ -113,12 +113,15 @@ public class RespawnTimer extends SlashCommand {
         Guild guild = event.getGuild();
 
         Timer timer = new Timer(event.getGuild().getName() + "-RespawnTimer-Thread", true);
-        long offsetSeconds = calendar.get(Calendar.SECOND)
-                + TimeUnit.MINUTES.toSeconds(calendar.get(Calendar.MINUTE) % 30);
+        long offsetSeconds = calendar.get(Calendar.SECOND) + TimeUnit.MINUTES.toSeconds(calendar.get(Calendar.MINUTE) % 30);
         RespawnTimerTask respawnTimerTask = new RespawnTimerTask(guild, voiceChannel, offsetSeconds);
         timer.schedule(respawnTimerTask, date);
 
-        Reply reply = new Reply(event).onCommand(Status.SUCCESS, "wup wup");
+        Reply reply = new Reply(event).onCommand(Status.SUCCESS, String.format("""
+            Scheduled task for the date: 
+            **%s**
+
+            Starting respawn announcements with respawn number: **%s**""", calendar.getTime(),respawnTimerTask.getStartingRespawn()));
         reply.setEphemeral(false);
         return reply;
     }
