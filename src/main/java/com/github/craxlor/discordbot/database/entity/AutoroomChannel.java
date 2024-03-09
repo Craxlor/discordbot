@@ -1,32 +1,30 @@
 package com.github.craxlor.discordbot.database.entity;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+import lombok.Data;
+
+@Data
+@Entity
+@Table(name = "autoroomChannels")
 public class AutoroomChannel {
-    private long channel_id, trigger_id, guild_id;
 
-    // SETTER
-    public void setChannel_id(long channel_id) {
-        this.channel_id = channel_id;
-    }
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private long id;
 
-    public void setTrigger_id(long trigger_id) {
-        this.trigger_id = trigger_id;
-    }
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "trigger_id", referencedColumnName = "id")
+    private AutoroomTrigger autoroomTrigger;
 
-    public void setGuild_id(long guild_id) {
-        this.guild_id = guild_id;
-    }
-
-    // GETTER
-    public long getChannel_id() {
-        return channel_id;
-    }
-
-    public long getTrigger_id() {
-        return trigger_id;
-    }
-
-    public long getGuild_id() {
-        return guild_id;
-    }
+    @Column(name = "guild_id")
+    private long guild_id;
 
 }

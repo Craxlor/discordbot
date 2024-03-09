@@ -5,50 +5,34 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.Data;
+
+@Data
+@Entity
+@Table(name = "guilds")
 public class DiscordServer {
 
-    private long guild_id = -1, musicLog_id = -1;
-    private String name = null, modules = null, colorHex = null;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private long id;
 
-    // SETTER
-    public void setGuild_id(long guild_id) {
-        this.guild_id = guild_id;
-    }
+    @Column(name = "musicLog_id")
+    private long musicLog_id;
 
-    public void setMusicLog_id(long musicLog_id) {
-        this.musicLog_id = musicLog_id;
-    }
+    @Column(name = "name")
+    private String name;
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    @Column(name = "modules")
+    private String modules;
 
-    public void setModules(String modules) {
-        this.modules = modules;
-    }
-
-    public void setColorHex(String colorHex) {
-        this.colorHex = colorHex;
-    }
-
-    // GETTER
-    public long getGuild_id() {
-        return guild_id;
-    }
-
-    public long getMusicLog_id() {
-        return musicLog_id;
-    }
-
-    @Nullable
-    public String getName() {
-        return name;
-    }
-
-    @Nullable
-    public String getModules() {
-        return modules;
-    }
+    @Column(name = "colorHex")
+    private String colorHex;
 
     @Nullable
     public List<String> getModulesAsList() {
@@ -61,11 +45,6 @@ public class DiscordServer {
             list.add(module);
         }
         return list;
-    }
-
-    @Nullable
-    public String getColorHex() {
-        return colorHex;
     }
 
 }
