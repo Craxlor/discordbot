@@ -26,8 +26,8 @@ repositories{
 dependencies {
     umlDoclet "nl.talsmasoftware:umldoclet:2.0.19"
     implementation fileTree(dir:'resources/jars', include: ['*.jar']) // local jars
-    implementation 'net.dv8tion:JDA:5.0.0-beta.7'
-    implementation 'dev.arbjerg:lavaplayer:2.0.1'
+    implementation 'net.dv8tion:JDA:5.0.0-beta.20'
+    implementation 'dev.arbjerg:lavaplayer:2.1.0'
     implementation 'com.googlecode.json-simple:json-simple:1.1.1'
     implementation 'com.google.code.gson:gson:2.8.9'
     implementation 'se.michaelthelin.spotify:spotify-web-api-java:7.2.2' // spotify
