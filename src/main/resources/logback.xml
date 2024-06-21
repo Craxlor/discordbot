@@ -29,7 +29,7 @@
         <file>resources/logs/database.log</file>
         <append>true</append>
         <encoder>
-            <pattern>%d{dd MMM yyyy}, %d{HH:mm:ss.SSS} [%thread] %n%caller{0..2}%-5level: %msg%n</pattern>
+            <pattern>%d{dd MMM yyyy}, %d{HH:mm:ss.SSS} [%thread] %class %method %n%caller{0..2}%-5level: %msg%n</pattern>
         </encoder>
     </appender>
 
@@ -45,10 +45,6 @@
         <appender-ref ref="SIFT" />
     </logger>
 
-    <logger name="database" level="INFO">
-        <appender-ref ref="DATABASE" />
-    </logger>
-
     <logger name="reddit" level="INFO">
         <appender-ref ref="REDDIT" />
     </logger>
@@ -56,4 +52,25 @@
     <root level="INFO">
         <appender-ref ref="STDOUT" />
     </root>
+
+    <!-- HIBERNATE LOGGER CONFIGURATION -->
+
+    <!--log sql statements without actual parameter values -->
+    <logger name="org.hibernate.SQL" level="debug" additivity="false"> 
+         <appender-ref ref="DATABASE"/> 
+    </logger>
+    <!-- log parameter values -->
+    <!-- <logger name="org.hibernate.orm.jdbc.bind" level="trace" additivity="false">
+        <appender-ref ref="DATABASE"/>
+    </logger> -->
+    <!-- log hibernate statistics -->
+    <!-- <logger name="org.hibernate.stat" level="debug" additivity="false">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+    <logger name="org.hibernate.SQL_SLOW" level="info" additivity="false">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+    <logger name="org.hibernate.cache" level="debug" additivity="false">
+        <appender-ref ref="STDOUT"/>
+    </logger> -->
 </configuration>

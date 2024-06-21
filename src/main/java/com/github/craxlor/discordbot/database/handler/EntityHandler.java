@@ -3,11 +3,8 @@ package com.github.craxlor.discordbot.database.handler;
 import javax.annotation.Nullable;
 
 import org.hibernate.Session;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public interface EntityHandler<Entity> {
-    static final Logger logger = LoggerFactory.getLogger("database");
 
     public default void insert(Session session, Entity entity) {
         session.merge(entity);

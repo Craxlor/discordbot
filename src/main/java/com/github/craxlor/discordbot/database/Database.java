@@ -16,7 +16,7 @@ import com.github.craxlor.discordbot.database.entity.YouTubeVideoData;
 
 public class Database {
 	private static SessionFactory sessionFactory;
-	private static final Logger logger = LoggerFactory.getLogger("database");
+	private static final Logger logger = LoggerFactory.getLogger("org.hibernate");
 
 	static {
 		try {
