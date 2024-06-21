@@ -5,10 +5,14 @@ import java.util.List;
 
 import javax.annotation.Nonnull;
 
+import org.hibernate.Session;
+import org.hibernate.Transaction;
 import org.json.simple.parser.ParseException;
 
 import com.github.craxlor.discordbot.command.slash.SlashCommand;
+import com.github.craxlor.discordbot.database.Database;
 import com.github.craxlor.discordbot.database.entity.RedditTask;
+import com.github.craxlor.discordbot.database.handler.DBGuildHandler;
 import com.github.craxlor.discordbot.database.handler.DBRedditTaskHandler;
 import com.github.craxlor.discordbot.util.core.GuildManager;
 import com.github.craxlor.discordbot.util.reply.Reply;
@@ -110,15 +114,24 @@ public class RedditGallery extends SlashCommand {
         // check if there's already a redditTask for this subreddit on this guild
         // stop execution if true
         DBRedditTaskHandler dbRedditTaskHandler = new DBRedditTaskHandler();
-        List<RedditTask> redditTasks = dbRedditTaskHandler.getEntities(guild.getIdLong());
+        // init database session
+        Session session = Database.getSessionFactory().openSession();
+        Transaction transaction = session.beginTransaction();
+        List<RedditTask> redditTasks = dbRedditTaskHandler.getRedditTasksByGuild(session, guild.getIdLong());
         for (RedditTask redditTask : redditTasks) {
             if (redditTask.getSubreddit().equalsIgnoreCase(subredditName)) {
+                // close database session
+                transaction.commit();
+                Database.getSessionFactory().getCurrentSession().close();
                 return new Reply(event).onCommand(Status.FAIL,
                         "There is already an ongoing task for the subreddit **" + subredditName + "** on this guild!");
             }
         }
         // check if the RedditScheduler already manages 10 tasks
         if (guildManager.getRedditScheduler().size() >= 10) {
+            // close database session
+            transaction.commit();
+            Database.getSessionFactory().getCurrentSession().close();
             return new Reply(event).onCommand(Status.FAIL,
                     "You can only maintain a maximum of 10 reddit galleries per guild.");
         }
@@ -131,6 +144,9 @@ public class RedditGallery extends SlashCommand {
             GuildChannelUnion channelUnion = event.getOption(CREATE_OPT_CHANNEL_NAME).getAsChannel();
             // validate channel type of provided channel
             if (channelUnion.getType() != ChannelType.TEXT) {
+                // close database session
+                transaction.commit();
+                Database.getSessionFactory().getCurrentSession().close();
                 return new Reply(event).onCommand(Status.FAIL,
                         "The provided channel has to be a textchannel!");
             }
@@ -146,17 +162,20 @@ public class RedditGallery extends SlashCommand {
             period = 300000l;
         String firstTime = event.getOption(CREATE_OPT_FIRSTTIME_NAME).getAsString();
         // register redditTask in database
+        DBGuildHandler dbGuildHandler = new DBGuildHandler();
         RedditTask redditTask = new RedditTask();
         redditTask.setChannel_id(textChannel.getIdLong());
         redditTask.setFirstTime(firstTime);
-        redditTask.setGuild_id(guild.getIdLong());
+        redditTask.setRedditTasks_guild(dbGuildHandler.getEntity(session, guild.getIdLong()));
         redditTask.setPeriod(period);
         redditTask.setSubreddit(subredditName);
-        dbRedditTaskHandler.insert(redditTask);
+        dbRedditTaskHandler.insert(session, redditTask);
 
         // schedule the task
         guildManager.getRedditScheduler().schedule(redditTask);
-
+        // close database session
+        transaction.commit();
+        Database.getSessionFactory().getCurrentSession().close();
         return new Reply(event).onCommand(Status.SUCCESS,
                 "Created a gallery for the subreddit: " + subredditName + ".");
     }
@@ -166,12 +185,18 @@ public class RedditGallery extends SlashCommand {
         Guild guild = event.getGuild();
         String subreddit = event.getOption(DELETE_OPT_NAME).getAsString();
         DBRedditTaskHandler dbRedditTaskHandler = new DBRedditTaskHandler();
-        RedditTask redditTask = dbRedditTaskHandler.getEntity(guild.getIdLong(), subreddit);
+        // init database session
+        Session session = Database.getSessionFactory().openSession();
+        Transaction transaction = session.beginTransaction();
+        RedditTask redditTask = dbRedditTaskHandler.getEntity(session, guild.getIdLong(), subreddit);
         if (redditTask == null)
             return new Reply(event).onCommand(Status.FAIL,
                     "Couldn't find a database entry for the subreddit: " + subreddit);
         // remove redditTask from DB
-        dbRedditTaskHandler.removeRedditTask(redditTask.getChannel_id(), subreddit);
+        dbRedditTaskHandler.removeRedditTask(session, redditTask.getChannel_id(), subreddit);
+        // close database session
+        transaction.commit();
+        Database.getSessionFactory().getCurrentSession().close();
         // stop task
         GuildManager.getGuildManager(guild).getRedditScheduler().stop(redditTask);
         // delete textChannel

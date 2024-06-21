@@ -2,7 +2,11 @@ package com.github.craxlor.discordbot.command.module.autoroom.slash;
 
 import javax.annotation.Nonnull;
 
+import org.hibernate.Session;
+import org.hibernate.Transaction;
+
 import com.github.craxlor.discordbot.command.slash.SlashCommand;
+import com.github.craxlor.discordbot.database.Database;
 import com.github.craxlor.discordbot.database.entity.AutoroomTrigger;
 import com.github.craxlor.discordbot.database.handler.DBAutoroomTriggerHandler;
 import com.github.craxlor.discordbot.util.reply.Reply;
@@ -91,46 +95,58 @@ public class Setup extends SlashCommand {
 	@SuppressWarnings("null")
 	public Reply execute(SlashCommandInteractionEvent event) throws Exception {
 		String subcommandName = event.getSubcommandName();
-		String statusDetail = "";
+		Status status = Status.FAIL;
+		String statusDetail = "Fatal error!\nPlease contact the developer immediately.\nDiscord Tag: Arty#1006";
 		DBAutoroomTriggerHandler dbAutoroomTriggerHandler = new DBAutoroomTriggerHandler();
 		Reply reply = new Reply(event);
+		// init database session
+		Session session = Database.getSessionFactory().openSession();
+		Transaction transaction = session.beginTransaction();
 		switch (subcommandName) {
 			case CREATE_NAME -> {
 				try { // try catch to validate trigger & category options
 					String name = event.getOption(OPT_NAME_NAME).getAsString();
 					VoiceChannel trigger = event.getOption(OPT_TRIGGER_NAME)
 							.getAsChannel().asVoiceChannel();
+					AutoroomTrigger autoroomTrigger = dbAutoroomTriggerHandler.getEntity(session, trigger.getIdLong());
 					// prevent double bindings
-					if (dbAutoroomTriggerHandler.getEntity(trigger.getIdLong()) != null)
+					if (autoroomTrigger != null) {
+						// close database session
+						transaction.commit();
+						Database.getSessionFactory().getCurrentSession().close();
 						return new Reply(event).onCommand(Status.FAIL,
 								"The selceted channel is already an autoroom trigger!");
+					}
 					Category category = event.getOption(OPT_CATEGORY_NAME)
 							.getAsChannel().asCategory();
 					String parent = event.getOption(OPT_PARENT_NAME).getAsString();
 
-					AutoroomTrigger autoroomTrigger = new AutoroomTrigger();
+					autoroomTrigger = new AutoroomTrigger();
 					autoroomTrigger.setCategory_id(category.getIdLong());
 					autoroomTrigger.setInheritance(parent);
 					autoroomTrigger.setNaming_pattern(name);
-					autoroomTrigger.setTrigger_id(trigger.getIdLong());
-					dbAutoroomTriggerHandler.insert(autoroomTrigger);
-
+					autoroomTrigger.setId(trigger.getIdLong());
+					dbAutoroomTriggerHandler.insert(session, autoroomTrigger);
+					status = Status.SUCCESS;
 					statusDetail = """
 							Set %s as an autoroom trigger.
 							The Autorooms will be named: %s.""".formatted(trigger.getAsMention(), name);
 					reply.setEphemeral(false);
-					return reply.onCommand(Status.SUCCESS, statusDetail);
 				} catch (IllegalStateException e) {
-					return reply.onCommand(Status.FAIL,
-							"Either the specified voice channel is not a voice channel or the specified category is not a category!");
+					status = Status.FAIL;
+					statusDetail = "Either the specified voice channel is not a voice channel or the specified category is not a category!";
 				}
 			}
 			case EDIT_NAME -> {
 				VoiceChannel trigger = event.getOption(OPT_TRIGGER_NAME).getAsChannel().asVoiceChannel();
 				// check if the provided channel is a trigger
-				if (dbAutoroomTriggerHandler.getEntity(trigger.getIdLong()) == null)
+				if (dbAutoroomTriggerHandler.getEntity(session, trigger.getIdLong()) == null) {
+					// close database session
+					transaction.commit();
+					Database.getSessionFactory().getCurrentSession().close();
 					return reply.onCommand(Status.FAIL,
 							"The selected channel is not an autoroom trigger!");
+				}
 				OptionMapping option = event.getOption(OPT_NAME_NAME);
 				String name = null, parent = null;
 				long categoryID = -1;
@@ -152,6 +168,9 @@ public class Setup extends SlashCommand {
 								Changed the **Category** where autorooms will be created\nfor the trigger %s to **%s**."""
 								.formatted(trigger.getAsMention(), category.getAsMention());
 					} catch (IllegalStateException e) {
+						// close database session
+						transaction.commit();
+						Database.getSessionFactory().getCurrentSession().close();
 						return reply.onCommand(Status.FAIL, "The selected channel has to be a **Category**!");
 					}
 				}
@@ -165,32 +184,33 @@ public class Setup extends SlashCommand {
 							.formatted(parent);
 				}
 				// apply changes
-				AutoroomTrigger autoroomTrigger = dbAutoroomTriggerHandler.getEntity(trigger.getIdLong());
+				AutoroomTrigger autoroomTrigger = dbAutoroomTriggerHandler.getEntity(session, trigger.getIdLong());
 				autoroomTrigger.setNaming_pattern(name); // could be null
 				autoroomTrigger.setCategory_id(categoryID); // could be -1
 				autoroomTrigger.setInheritance(parent); // could be null
-				dbAutoroomTriggerHandler.update(autoroomTrigger);
+				dbAutoroomTriggerHandler.update(session, autoroomTrigger);
 				reply.setEphemeral(false);
-				return reply.onCommand(Status.SUCCESS, statusDetail);
+				status = Status.SUCCESS;
 			}
 			case REMOVE_NAME -> {
 				VoiceChannel trigger = event.getOption(REMOVE_OPT_CHANNEL_NAME).getAsChannel().asVoiceChannel();
-				if (dbAutoroomTriggerHandler.getEntity(trigger.getIdLong()) != null) {
-					dbAutoroomTriggerHandler.remove(trigger.getIdLong());
+				if (dbAutoroomTriggerHandler.getEntity(session, trigger.getIdLong()) != null) {
+					dbAutoroomTriggerHandler.remove(session, trigger.getIdLong());
 					statusDetail = "removed " + trigger.getAsMention();
 					OptionMapping optionMapping = event.getOption(REMOVE_OPT_DELETE_NAME);
 					if (optionMapping != null && optionMapping.getAsBoolean())
 						trigger.delete().queue();
 					reply.setEphemeral(false);
-					return reply.onCommand(Status.SUCCESS, statusDetail);
+					status = Status.SUCCESS;
 				} else
-					return reply.onCommand(Status.FAIL,
-							"Could not identify " + trigger.getAsMention() + " as an autoroom trigger!");
+					status = Status.FAIL;
+				statusDetail = "Could not identify " + trigger.getAsMention() + " as an autoroom trigger!";
 			}
 		}
-
-		return reply.onCommand(Status.ERROR,
-				"Fatal error!\nPlease contact the developer immediately.\nDiscord Tag: Arty#1006");
+		// close database session
+		transaction.commit();
+		Database.getSessionFactory().getCurrentSession().close();
+		return reply.onCommand(status, statusDetail);
 	}
 
 	@Override

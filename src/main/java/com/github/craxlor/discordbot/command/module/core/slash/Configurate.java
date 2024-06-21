@@ -5,16 +5,19 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nonnull;
 
+import org.hibernate.Session;
+import org.hibernate.Transaction;
+
 import com.github.craxlor.discordbot.command.Commandlist;
 import com.github.craxlor.discordbot.command.slash.SlashCommand;
-import com.github.craxlor.discordbot.database.entity.DiscordServer;
+import com.github.craxlor.discordbot.database.Database;
+import com.github.craxlor.discordbot.database.entity.Guild;
 import com.github.craxlor.discordbot.database.handler.DBGuildHandler;
 import com.github.craxlor.discordbot.util.Properties;
 import com.github.craxlor.discordbot.util.core.GuildManager;
 import com.github.craxlor.discordbot.util.reply.Reply;
 import com.github.craxlor.discordbot.util.reply.Status;
 
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -89,9 +92,12 @@ public class Configurate extends SlashCommand {
     @Override
     public Reply execute(@Nonnull SlashCommandInteractionEvent event) throws Exception {
         String subcommandGroup = event.getSubcommandGroup();
-        Guild guild = event.getGuild();
+        net.dv8tion.jda.api.entities.Guild guild = event.getGuild();
+        // init database session
+        Session session = Database.getSessionFactory().openSession();
+        Transaction transaction = session.beginTransaction();
         DBGuildHandler dbGuildHandler = new DBGuildHandler();
-        DiscordServer discordServer = dbGuildHandler.getEntity(guild.getIdLong());
+        Guild discordServer = dbGuildHandler.getEntity(session, guild.getIdLong());
         Reply reply = new Reply(event).onCommand(Status.ERROR, "Something went wrong.");
         switch (subcommandGroup) {
             case EMBEDCOLOR_NAME -> {
@@ -104,12 +110,14 @@ public class Configurate extends SlashCommand {
                 if (discordServer.getModulesAsList().contains("music"))
                     reply = configMusicLog(event, discordServer);
                 else
-                    return reply.onCommand(Status.FAIL,
-                            "you cannot set a music log, until the music module is enabled");
+                    reply.onCommand(Status.FAIL, "you cannot set a music log, until the music module is enabled");
             }
         }
-        
-        dbGuildHandler.update(discordServer);
+
+        dbGuildHandler.insert(session, discordServer);
+        // close database session
+        transaction.commit();
+        Database.getSessionFactory().getCurrentSession().close();
         return reply;
     }
 
@@ -131,7 +139,7 @@ public class Configurate extends SlashCommand {
     }
 
     @SuppressWarnings("null")
-    public Reply configEmbedColor(SlashCommandInteractionEvent event, DiscordServer discordServer) {
+    public Reply configEmbedColor(SlashCommandInteractionEvent event, Guild discordServer) {
         Reply reply = new Reply(event);
         switch (event.getSubcommandName()) {
             case EMBEDCOLOR_SET_NAME -> {
@@ -159,12 +167,12 @@ public class Configurate extends SlashCommand {
     }
 
     @SuppressWarnings("null")
-    public Reply configModule(SlashCommandInteractionEvent event, DiscordServer discordServer) {
+    public Reply configModule(SlashCommandInteractionEvent event, Guild discordServer) {
         // module that shall be toggled
         String module = event.getOption(MODULE_OPT_NAME).getAsString();
         List<String> modules = discordServer.getModulesAsList();
         // commandlist for the guild
-        Guild guild = event.getGuild();
+        net.dv8tion.jda.api.entities.Guild guild = event.getGuild();
         Commandlist commandlist = GuildManager.getGuildManager(guild).getCommandlist();
         Reply reply = new Reply(event);
         switch (event.getSubcommandName()) {
@@ -209,7 +217,7 @@ public class Configurate extends SlashCommand {
                 commandlist.remove(module);
                 // update commandlist
                 guild.updateCommands().addCommands(commandlist.getCommandData()).queue();
-                
+
                 String modulesString = null;
                 for (String moduleString : modules) {
                     modulesString = modulesString + moduleString + ",";
@@ -227,7 +235,7 @@ public class Configurate extends SlashCommand {
     }
 
     @SuppressWarnings("null")
-    public Reply configMusicLog(SlashCommandInteractionEvent event, DiscordServer discordServer) {
+    public Reply configMusicLog(SlashCommandInteractionEvent event, Guild discordServer) {
         String subcommandName = event.getSubcommandName();
         Reply reply = new Reply(event);
         switch (subcommandName) {

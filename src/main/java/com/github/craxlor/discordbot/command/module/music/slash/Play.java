@@ -2,9 +2,13 @@ package com.github.craxlor.discordbot.command.module.music.slash;
 
 import javax.annotation.Nonnull;
 
+import org.hibernate.Session;
+import org.hibernate.Transaction;
+
 import com.github.craxlor.discordbot.command.slash.SCMusic;
-import com.github.craxlor.discordbot.database.entity.YouTubeSearch;
-import com.github.craxlor.discordbot.database.handler.DBYoutubeSearchHandler;
+import com.github.craxlor.discordbot.database.Database;
+import com.github.craxlor.discordbot.database.entity.YouTubeVideoData;
+import com.github.craxlor.discordbot.database.handler.DBYoutubeVideoHandler;
 import com.github.craxlor.discordbot.util.core.GuildManager;
 import com.github.craxlor.discordbot.util.music.MusicManager;
 import com.github.craxlor.discordbot.util.music.MyAudioLoadResultHandler;
@@ -72,12 +76,12 @@ public class Play extends SCMusic {
             }
         }
 
-        YouTubeSearch youTubeSearch = null;
+        YouTubeVideoData youTubeVideoData = null;
 
         if (input.contains("http") == false && input.contains("www.") == false) {
             // assume that input is not containing an url but a searchTerm to look up
-            youTubeSearch = YouTubeHelper.findVideo(input);
-            input = youTubeSearch.getVideoURL();
+            youTubeVideoData = YouTubeHelper.findVideo(input);
+            input = youTubeVideoData.getVideoURL();
         }
         // check if the YT-Video is known in YouTubeStorage
         else if (input.contains("youtube.com/watch?v=")) {
@@ -87,8 +91,14 @@ public class Play extends SCMusic {
                 videoId = input.substring(input.lastIndexOf("?v=") + 3, input.indexOf("&list"));
             else
                 videoId = input.substring(input.lastIndexOf("?v=") + 3, input.length());
+            // init database session
+            Session session = Database.getSessionFactory().openSession();
+            Transaction transaction = session.beginTransaction();
             // retrieve YouTubeStorage entry to provide more information in command-reply
-            youTubeSearch = new DBYoutubeSearchHandler().getYouTubeSearchById(videoId);
+            youTubeVideoData = new DBYoutubeVideoHandler().getEntity(session, videoId);
+            // close database session
+            transaction.commit();
+            Database.getSessionFactory().getCurrentSession().close();
         }
         // check if provided url is from spotify
         else if (input.contains("open.spotify")) {
@@ -96,18 +106,19 @@ public class Play extends SCMusic {
                 return new Reply(event).onCommand(Status.FAIL, "I just support spotify **tracks**!");
             String searchTerm = convertSpotifyUrlToSearchTerm(input);
 
-            youTubeSearch = YouTubeHelper.findVideo(searchTerm);
-            input = youTubeSearch.getVideoURL();
+            youTubeVideoData = YouTubeHelper.findVideo(searchTerm);
+            input = youTubeVideoData.getVideoURL();
         }
-
+        System.out.println(input);
         MyAudioLoadResultHandler audioLoadResultHandler = new MyAudioLoadResultHandler(musicManager, member, mode,
                 input);
 
         GuildManager.getAudioPlayerManager().loadItemOrdered(musicManager, input, audioLoadResultHandler).get();
 
+
         return new Reply(event)
                 .onCommand(audioLoadResultHandler.getStatus(), audioLoadResultHandler.getMessage())
-                .onMusic(audioLoadResultHandler.getTrackInfo(), youTubeSearch);
+                .onMusic(audioLoadResultHandler.getTrackInfo(), youTubeVideoData);
     }
 
     @SuppressWarnings("null")
