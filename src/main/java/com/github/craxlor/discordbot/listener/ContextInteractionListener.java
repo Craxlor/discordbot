@@ -19,7 +19,7 @@ import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionE
 import net.dv8tion.jda.api.events.interaction.command.UserContextInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
-public class ContextInteractionHandler extends ListenerAdapter {
+public class ContextInteractionListener extends ListenerAdapter {
 
     private static final Commandlist globalCommandlist = Commandlist.getEveryCommand().getGlobalCommands();
 

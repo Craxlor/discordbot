@@ -25,12 +25,12 @@ import net.dv8tion.jda.api.events.guild.GuildReadyEvent;
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
-public class AutoroomHandler extends ListenerAdapter {
+public class AutoroomListener extends ListenerAdapter {
     DBAutoroomChannelHandler dbAutoroomChannelHandler;
     DBAutoroomTriggerHandler dbAutoroomTriggerHandler;
     DBGuildHandler dbGuildHandler;
 
-    public AutoroomHandler() {
+    public AutoroomListener() {
         dbAutoroomChannelHandler = new DBAutoroomChannelHandler();
         dbAutoroomTriggerHandler = new DBAutoroomTriggerHandler();
         dbGuildHandler = new DBGuildHandler();

@@ -17,7 +17,7 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.guild.GuildReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
-public class RedditHandler extends ListenerAdapter {
+public class RedditListener extends ListenerAdapter {
     /**
      * load all Reddit Tasks for the guild
      */

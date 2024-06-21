@@ -17,7 +17,7 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
-public class SlashCommandInteractionHandler extends ListenerAdapter {
+public class SlashCommandInteractionListener extends ListenerAdapter {
 
     private static final Commandlist globalCommandlist = Commandlist.getEveryCommand().getGlobalCommands();
 
