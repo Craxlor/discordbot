@@ -6,7 +6,11 @@ import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
-import com.github.craxlor.discordbot.database.entity.YouTubeSearch;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
+
+import com.github.craxlor.discordbot.database.Database;
+import com.github.craxlor.discordbot.database.entity.YouTubeVideoData;
 import com.github.craxlor.discordbot.database.handler.DBGuildHandler;
 import com.github.craxlor.jReddit.RedditPost;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
@@ -17,11 +21,13 @@ import net.dv8tion.jda.api.events.interaction.command.GenericCommandInteractionE
 public class EmbedBuilder extends net.dv8tion.jda.api.EmbedBuilder {
 
     @SuppressWarnings("null")
-    public EmbedBuilder addMusicFields(@Nullable AudioTrackInfo trackInfo, @Nullable YouTubeSearch youTubeSearch) {
+    public EmbedBuilder addMusicFields(@Nullable AudioTrackInfo trackInfo,
+            @Nullable YouTubeVideoData youTubeVideoData) {
         // track name field
-        if (youTubeSearch != null) {
-            setThumbnail(youTubeSearch.getVideoThumbnailURL());
-            addField("Track", "[" + youTubeSearch.getVideo_title() + "](" + youTubeSearch.getVideoURL() + ")", false);
+        if (youTubeVideoData != null) {
+            setThumbnail(youTubeVideoData.getVideoThumbnailURL());
+            addField("Track", "[" + youTubeVideoData.getVideo_title() + "](" + youTubeVideoData.getVideoURL() + ")",
+                    false);
         } else if (trackInfo != null)
             addField("Track", "[" + trackInfo.title + "](" + trackInfo.uri + ")", false);
 
@@ -36,8 +42,9 @@ public class EmbedBuilder extends net.dv8tion.jda.api.EmbedBuilder {
         }
         // channel field
         if (trackInfo != null) {
-            if (youTubeSearch != null)
-                addField("Youtube channel", "[" + trackInfo.author + "](" + youTubeSearch.getChannelURL() + ")", true);
+            if (youTubeVideoData != null)
+                addField("Youtube channel", "[" + trackInfo.author + "](" + youTubeVideoData.getChannelURL() + ")",
+                        true);
             else
                 addField("Youtube channel", trackInfo.author, true);
         }
@@ -74,7 +81,13 @@ public class EmbedBuilder extends net.dv8tion.jda.api.EmbedBuilder {
         Color color;
         Random random = new Random();
         if (guild != null) {
-            String hex = new DBGuildHandler().getEntity(guild.getIdLong()).getColorHex();
+            // init database session
+            Session session = Database.getSessionFactory().openSession();
+            Transaction transaction = session.beginTransaction();
+            String hex = new DBGuildHandler().getEntity(session, guild.getIdLong()).getColorHex();
+            // close database session
+            transaction.commit();
+            Database.getSessionFactory().getCurrentSession().close();
             if (hex != null) {
                 color = Color.decode(hex);
                 setColor(color);

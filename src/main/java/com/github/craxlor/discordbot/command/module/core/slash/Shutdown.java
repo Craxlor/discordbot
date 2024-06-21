@@ -38,7 +38,7 @@ public class Shutdown extends SlashCommand {
         reply = new Reply(event).onCommand(Status.SUCCESS, "The Bot is going offline!");
 
         reply.send();
-        Database.getInstance().closeConnection();
+        Database.getSessionFactory().close();
         GuildManager.getGuildManager(event.getGuild()).getLogger().info(LogHelper.logCommand(event, Status.SUCCESS, "successful execution"));
         Thread.sleep(1000);
         event.getJDA().shutdown();

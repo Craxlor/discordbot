@@ -7,11 +7,16 @@ import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.hibernate.Session;
+import org.hibernate.Transaction;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import com.github.craxlor.discordbot.database.entity.YouTubeSearch;
+import com.github.craxlor.discordbot.database.Database;
+import com.github.craxlor.discordbot.database.entity.YouTubeSearchData;
+import com.github.craxlor.discordbot.database.entity.YouTubeVideoData;
 import com.github.craxlor.discordbot.database.handler.DBYoutubeSearchHandler;
+import com.github.craxlor.discordbot.database.handler.DBYoutubeVideoHandler;
 import com.github.craxlor.discordbot.util.Properties;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpRequest;
@@ -54,13 +59,20 @@ public class YouTubeHelper {
      *         reached
      */
     @Nullable
-    public static YouTubeSearch findVideo(@Nonnull String searchTerm) {
-        DBYoutubeSearchHandler dbYoutubeSearchHandler = new DBYoutubeSearchHandler();
-        YouTubeSearch youTubeSearch = dbYoutubeSearchHandler.getYouTubeSearchBySearchTerm(searchTerm);
+    public static YouTubeVideoData findVideo(@Nonnull String searchTerm) {
+        // init database session
+        Session session = Database.getSessionFactory().openSession();
+        Transaction transaction = session.beginTransaction();
+        DBYoutubeVideoHandler dbYoutubeVideoHandler = new DBYoutubeVideoHandler();
+        YouTubeVideoData youTubeVideoData = dbYoutubeVideoHandler.getYouTubeVideoDataByYouTubeSearchData(session,
+                searchTerm);
         // found searchTerm in database -> reuse reult to save on quotas
-        if (youTubeSearch != null)
-            return youTubeSearch;
-
+        if (youTubeVideoData != null) {
+            // close database session
+            transaction.commit();
+            Database.getSessionFactory().getCurrentSession().close();
+            return youTubeVideoData;
+        }
         try {
             YouTube.Search.List request = getService().search().list("snippet");
             SearchListResponse response = request
@@ -83,13 +95,20 @@ public class YouTubeHelper {
                 // save result if more than half of the searchTermParts have been found in the
                 // videoTitle
                 if (searchTermPartMatches >= searchTerm.split(" ").length / 2f) {
-                    youTubeSearch = new YouTubeSearch();
-                    youTubeSearch.setVideo_id(searchResult.getId().getVideoId());
-                    youTubeSearch.setVideo_title(searchResult.getSnippet().getTitle());
-                    youTubeSearch.setChannel_id(searchResult.getSnippet().getChannelId());
-                    youTubeSearch.setSearchTerm(searchTerm);
-                    dbYoutubeSearchHandler.insert(youTubeSearch);
-                    return youTubeSearch;
+                    youTubeVideoData = new YouTubeVideoData();
+                    youTubeVideoData.setId(searchResult.getId().getVideoId());
+                    youTubeVideoData.setVideo_title(searchResult.getSnippet().getTitle());
+                    youTubeVideoData.setChannel_id(searchResult.getSnippet().getChannelId());
+
+                    YouTubeSearchData youTubeSearchData = new YouTubeSearchData();
+                    youTubeSearchData.setId(searchTerm);
+                    youTubeSearchData.setYouTubeVideoData(youTubeVideoData);
+                    DBYoutubeSearchHandler dbYoutubeSearchHandler = new DBYoutubeSearchHandler();
+                    dbYoutubeSearchHandler.insert(session, youTubeSearchData);
+                    // close database session
+                    transaction.commit();
+                    Database.getSessionFactory().getCurrentSession().close();
+                    return youTubeVideoData;
                 }
             }
         } catch (IOException | GeneralSecurityException e) {
@@ -97,6 +116,9 @@ public class YouTubeHelper {
             MDC.put("filename", "youtube");
             LoggerFactory.getLogger("sift").warn(e.getMessage());
         }
+        // close database session
+        transaction.commit();
+        Database.getSessionFactory().getCurrentSession().close();
         return null;
     }
 }

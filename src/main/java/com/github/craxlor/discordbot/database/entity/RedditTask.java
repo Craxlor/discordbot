@@ -1,64 +1,44 @@
 package com.github.craxlor.discordbot.database.entity;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+@Data
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@Entity
+@Table(name = "redditTasks")
 public class RedditTask {
-    private long channel_id, guild_id, period; // period in millis
-    private String subreddit, firstTime; // base64
 
-    // public RedditTask(long channel_id, String subreddit, String firstTime, long period, long guild_id) {
-    //     this.channel_id = channel_id;
-    //     this.guild_id = guild_id;
-    //     this.subreddit = subreddit;
-    //     this.firstTime = firstTime;
-    //     this.period = period;
-    // }
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    @EqualsAndHashCode.Include
+    private long id;
 
-    // SETTER
-    public void setChannel_id(long channel_id) {
-        this.channel_id = channel_id;
-    }
+    @Column(name = "channel_id")
+    @EqualsAndHashCode.Include
+    private long channel_id;
 
-    public void setGuild_id(long guild_id) {
-        this.guild_id = guild_id;
-    }
+    @ManyToOne(cascade = CascadeType.MERGE)
+    @JoinColumn(name = "guild_id", referencedColumnName = "id")
+    private Guild redditTasks_guild;
 
-    public void setSubreddit(String subreddit) {
-        this.subreddit = subreddit;
-    }
+    @Column(name = "period")
+    private long period; // period in millis
 
-    public void setPeriod(long period) {
-        this.period = period;
-    }
+    @Column(name = "subreddit")
+    @EqualsAndHashCode.Include
+    private String subreddit;
 
-    public void setFirstTime(String firstTime) {
-        this.firstTime = firstTime;
-    }
+    @Column(name = "firstTime")
+    private String firstTime; // base64
 
-    // GETTER
-    public long getChannel_id() {
-        return channel_id;
-    }
-
-    public long getGuild_id() {
-        return guild_id;
-    }
-
-    public String getSubreddit() {
-        return subreddit;
-    }
-
-    public long getPeriod() {
-        return period;
-    }
-
-    public String getFirstTime() {
-        return firstTime;
-    }
-
-    public boolean equals(RedditTask redditTask) {
-        if (guild_id == redditTask.getGuild_id() && channel_id == redditTask.getChannel_id()
-                && subreddit.equalsIgnoreCase(redditTask.getSubreddit()))
-            return true;
-
-        return false;
-    }
 }

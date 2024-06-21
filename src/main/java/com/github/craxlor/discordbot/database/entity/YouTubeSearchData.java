@@ -10,18 +10,14 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table(name = "autoroomChannels")
-public class AutoroomChannel {
+@Table(name = "ytSearches")
+public class YouTubeSearchData {
 
     @Id
-    private long id;
+    private String id;// = searchTerm
 
     @ManyToOne(cascade = CascadeType.MERGE)
-    @JoinColumn(name = "trigger_id", referencedColumnName = "id")
-    private AutoroomTrigger autoroomTrigger;
-
-    @ManyToOne(cascade = CascadeType.MERGE)
-    @JoinColumn(name = "guild_id", referencedColumnName = "id")
-    private Guild autoroomChannels_guild;
+    @JoinColumn(name = "video_id", referencedColumnName = "id")
+    private YouTubeVideoData youTubeVideoData;
 
 }

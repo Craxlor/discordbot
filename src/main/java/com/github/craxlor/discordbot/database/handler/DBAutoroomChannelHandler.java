@@ -1,104 +1,37 @@
 package com.github.craxlor.discordbot.database.handler;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
 
 import javax.annotation.Nullable;
 
+import org.hibernate.Session;
+
 import com.github.craxlor.discordbot.database.entity.AutoroomChannel;
+import com.github.craxlor.discordbot.database.entity.AutoroomTrigger;
+import com.github.craxlor.discordbot.database.entity.Guild;
 
 public class DBAutoroomChannelHandler implements EntityHandler<AutoroomChannel> {
 
     @Override
-    public boolean insert(AutoroomChannel entity) {
-        String sql = "INSERT INTO autoroomChannels(channel_id, trigger_id, guild_id) VALUES(?,?,?)";
-        try {
-            PreparedStatement preparedStatement = prepareStatement(sql);
-            preparedStatement.setLong(1, entity.getChannel_id());
-            preparedStatement.setLong(2, entity.getTrigger_id());
-            preparedStatement.setLong(3, entity.getGuild_id());
-            preparedStatement.executeUpdate();
-            logger.info("inserted new autoroomChannel");
-            return true;
-        } catch (SQLException e) {
-            logger.warn(e.getMessage());
-            return false;
-        }
+    public AutoroomChannel getEntity(Session session, long id) {
+        return session.get(AutoroomChannel.class, id);
     }
 
     @Override
-    public AutoroomChannel getEntity(long id) {
-        String sql = "SELECT * FROM autoroomChannels WHERE channel_id = ?";
-        try {
-            PreparedStatement preparedStatement = prepareStatement(sql);
-            preparedStatement.setLong(1, id);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            return map(resultSet);
-        } catch (SQLException e) {
-            logger.warn(e.getMessage());
-            return null;
-        }
+    public void remove(Session session, long id) {
+        AutoroomChannel autoroomChannel = (AutoroomChannel) session.get(AutoroomChannel.class, id);
+        session.remove(autoroomChannel);
     }
 
-    /**
-     * not implemented
-     */
-    @Override
-    public boolean update(AutoroomChannel entity) {
-        return false;
-    }
-
-    @Override
-    public boolean remove(long id) {
-        String sql = "DELETE FROM autoroomChannels WHERE channel_id = ?";
-        try {
-            PreparedStatement preparedStatement = prepareStatement(sql);
-            preparedStatement.setLong(1, id);
-            preparedStatement.executeUpdate();
-            logger.info("deleted an autoroomChannel");
-            return true;
-        } catch (SQLException e) {
-            logger.warn(e.getMessage());
-            return false;
-        }
-    }
-
-    @Override
-    public AutoroomChannel mapFrom(ResultSet rs) throws SQLException {
-        AutoroomChannel autoroomChannel = new AutoroomChannel();
-        autoroomChannel.setChannel_id(rs.getLong("channel_id"));
-        autoroomChannel.setGuild_id(rs.getLong("guild_id"));
-        autoroomChannel.setTrigger_id(rs.getLong("trigger_id"));
-        return autoroomChannel;
-    }
-
-    public int countAutoroomChannelsByTrigger(long trigger_id) {
-        String sql = "SELECT COUNT(*) AS count FROM autoroomChannels WHERE trigger_id = ?";
-        try {
-            PreparedStatement preparedStatement = prepareStatement(sql);
-            preparedStatement.setLong(1, trigger_id);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            return resultSet.getInt("count");
-        } catch (SQLException e) {
-            logger.warn(e.getMessage());
-            return -1;
-        }
+    public List<AutoroomChannel> getAutoroomChannelsByAutoroomTrigger(Session session,long trigger_id) {
+        AutoroomTrigger autoroomTrigger = (AutoroomTrigger) session.get(AutoroomTrigger.class, trigger_id);
+        return autoroomTrigger != null ? autoroomTrigger.getAutoroomChannels() : null;
     }
 
     @Nullable
-    public List<AutoroomChannel> getAutoroomChannelsByGuild(long guild_id) {
-        String sql = "SELECT * FROM autoroomChannels WHERE guild_id = ?";
-        try {
-            PreparedStatement preparedStatement = prepareStatement(sql);
-            preparedStatement.setLong(1, guild_id);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            return mapToList(resultSet);
-        } catch (SQLException e) {
-            logger.warn(e.getMessage());
-            return null;
-        }
+    public List<AutoroomChannel> getAutoroomChannelsByGuild(Session session,long guild_id) {
+        Guild guild = (Guild) session.get(Guild.class, guild_id);
+        return guild != null ? guild.getAutoroomChannels() : null;
     }
 
 }

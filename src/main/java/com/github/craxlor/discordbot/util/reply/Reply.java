@@ -3,7 +3,11 @@ package com.github.craxlor.discordbot.util.reply;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import com.github.craxlor.discordbot.database.entity.YouTubeSearch;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
+
+import com.github.craxlor.discordbot.database.Database;
+import com.github.craxlor.discordbot.database.entity.YouTubeVideoData;
 import com.github.craxlor.discordbot.database.handler.DBGuildHandler;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
 
@@ -49,11 +53,17 @@ public class Reply {
     }
 
     @SuppressWarnings("null")
-    public Reply onMusic(@Nullable AudioTrackInfo audioTrackInfo, @Nullable YouTubeSearch youTubeSearch) {
-        embedBuilder.addMusicFields(audioTrackInfo, youTubeSearch);
+    public Reply onMusic(@Nullable AudioTrackInfo audioTrackInfo, @Nullable YouTubeVideoData youTubeVideoData) {
+        embedBuilder.addMusicFields(audioTrackInfo, youTubeVideoData);
         // send reply message in music log channel
         Guild guild = event.getGuild();
-        long id = new DBGuildHandler().getEntity(guild.getIdLong()).getMusicLog_id();
+        // init database session
+        Session session = Database.getSessionFactory().openSession();
+        Transaction transaction = session.beginTransaction();
+        long id = new DBGuildHandler().getEntity(session, guild.getIdLong()).getMusicLog_id();
+        // close database session
+        transaction.commit();
+        Database.getSessionFactory().getCurrentSession().close();
         // musiclog exists
         if (id > -1) {
             // current channel is musicLog

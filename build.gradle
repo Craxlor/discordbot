@@ -6,6 +6,7 @@ plugins {
     id 'java'
     id 'application'
     id 'com.github.johnrengelman.shadow' version '7.1.2'
+    id 'io.freefair.lombok' version '8.0.1'
 }
 
 mainClassName = 'com.github.craxlor.discordbot.Main'
@@ -26,15 +27,16 @@ repositories{
 dependencies {
     umlDoclet "nl.talsmasoftware:umldoclet:2.0.19"
     implementation fileTree(dir:'resources/jars', include: ['*.jar']) // local jars
-    implementation 'net.dv8tion:JDA:5.0.0-beta.20'
-    implementation 'dev.arbjerg:lavaplayer:2.1.1'
+    implementation 'net.dv8tion:JDA:5.0.0-beta.24'
+    implementation 'dev.arbjerg:lavaplayer:2.2.0'
     implementation 'com.googlecode.json-simple:json-simple:1.1.1'
     implementation 'com.google.code.gson:gson:2.8.9'
     implementation 'se.michaelthelin.spotify:spotify-web-api-java:7.2.2' // spotify
     implementation 'com.google.api-client:google-api-client:1.32.1' // youtube
     implementation 'com.google.apis:google-api-services-youtube:v3-rev222-1.25.0' // youtube
     implementation 'ch.qos.logback:logback-classic:1.4.2' // logger
-    implementation 'org.xerial:sqlite-jdbc:3.40.1.0' // database
+    implementation 'org.mariadb.jdbc:mariadb-java-client:3.3.3' // database
+    implementation 'org.hibernate.orm:hibernate-core:6.4.4.Final' // hibernate
     implementation 'org.reflections:reflections:0.10.2'
 }
 

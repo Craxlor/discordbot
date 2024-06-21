@@ -5,7 +5,12 @@ import java.util.List;
 
 import javax.annotation.Nonnull;
 
+import org.hibernate.Session;
+import org.hibernate.Transaction;
+
 import com.github.craxlor.discordbot.command.slash.SlashCommand;
+import com.github.craxlor.discordbot.database.Database;
+import com.github.craxlor.discordbot.database.entity.AutoroomChannel;
 import com.github.craxlor.discordbot.database.handler.DBAutoroomChannelHandler;
 import com.github.craxlor.discordbot.util.reply.Reply;
 import com.github.craxlor.discordbot.util.reply.Status;
@@ -122,7 +127,15 @@ public class Customize extends SlashCommand {
         VoiceChannel vc = (VoiceChannel) voiceState.getChannel();
         if (vc == null)
             return false;
-        if (new DBAutoroomChannelHandler().getEntity(vc.getIdLong()) != null)
+
+        // init database session
+        Session session = Database.getSessionFactory().openSession();
+        Transaction transaction = session.beginTransaction();
+        AutoroomChannel autoroomChannel = new DBAutoroomChannelHandler().getEntity(session, vc.getIdLong());
+        // close database session
+        transaction.commit();
+        Database.getSessionFactory().getCurrentSession().close();
+        if (autoroomChannel != null)
             return true;
         return false;
     }

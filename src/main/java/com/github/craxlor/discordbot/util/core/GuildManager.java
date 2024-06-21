@@ -3,11 +3,14 @@ package com.github.craxlor.discordbot.util.core;
 import java.util.HashMap;
 import java.util.List;
 
+import org.hibernate.Session;
+import org.hibernate.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import com.github.craxlor.discordbot.command.Commandlist;
+import com.github.craxlor.discordbot.database.Database;
 import com.github.craxlor.discordbot.database.handler.DBGuildHandler;
 import com.github.craxlor.discordbot.util.music.MusicManager;
 import com.github.craxlor.discordbot.util.newworld.RespawnTimerTask;
@@ -32,17 +35,25 @@ public class GuildManager {
         this.guild_id = guild.getId();
         logger = LoggerFactory.getLogger("sift");
         // commandlist
-        List<String> modules = new DBGuildHandler().getEntity(guild.getIdLong()).getModulesAsList();
         commandlist = new Commandlist();
-        commandlist.add(Commandlist.CORE);
-        if (modules != null) {
-            for (String module : modules) {
-                commandlist.add(module);
+        // init database session
+        Session session = Database.getSessionFactory().openSession();
+        Transaction transaction = session.beginTransaction();
+        com.github.craxlor.discordbot.database.entity.Guild guildDB = new DBGuildHandler().getEntity(session, guild.getIdLong());
+        // close database session
+        transaction.commit();
+        Database.getSessionFactory().getCurrentSession().close();
+        if (guildDB != null) {
+            List<String> modules = guildDB.getModulesAsList();
+            commandlist.add(Commandlist.CORE);
+            if (modules != null) {
+                for (String module : modules) {
+                    commandlist.add(module);
+                }
             }
+            commandlist = commandlist.getGuildCommands();
+            commandlist.addAll(Commandlist.getEveryCommand().getGlobalCommands());
         }
-        commandlist = commandlist.getGuildCommands();
-        commandlist.addAll(Commandlist.getEveryCommand().getGlobalCommands());
-
         // reddit
         redditScheduler = new RedditScheduler(guild);
         // music
