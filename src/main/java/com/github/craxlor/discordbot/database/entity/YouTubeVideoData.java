@@ -1,10 +1,11 @@
 package com.github.craxlor.discordbot.database.entity;
 
+import java.util.List;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.Data;
 
@@ -14,7 +15,6 @@ import lombok.Data;
 public class YouTubeVideoData {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private String id;
 
     @Column(name = "channel_id")
@@ -22,6 +22,9 @@ public class YouTubeVideoData {
 
     @Column(name = "video_title")
     private String video_title;
+
+    @OneToMany(mappedBy = "youTubeVideoData")
+    private List<YouTubeSearchData> youTubeSearchDataList;
 
     public String getVideoThumbnailURL() {
         return "https://i.ytimg.com/vi/" + id + "/hqdefault.jpg";
