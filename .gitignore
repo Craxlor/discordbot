@@ -6,3 +6,4 @@ build
 *.db
 *.log
 *.json
+hibernate.cfg.xml
